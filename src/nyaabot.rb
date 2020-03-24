@@ -99,7 +99,7 @@ main_botloop do |message, bot|
     end
 
     if $user_mode[message.chat.id][:mode] == UserMode::COUNTING
-        generate_msg("Count of #{message.chat.id}: #{user_mode[message.chat.id][:count]}")
+        generate_msg("Count of #{message.chat.id}: #{$user_mode[message.chat.id][:count]}")
         if message.text == '喵'
             $user_mode[message.chat.id][:mode] = UserMode::STANDARD
             $user_mode[message.chat.id][:count] = 0
