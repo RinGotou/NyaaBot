@@ -6,14 +6,16 @@ require 'nokogiri'
 require 'net/http'
 # require 'accuweather'
 
+module UserMode
+    STANDARD = 0
+    COUNTING = 1
+end
+
 # constants
 $DEFAULT_CONFIG_FILE = './nyaabot_config.toml'
 $USER_INFO_FILE      = './nyaabot_users.toml'
 $PROXY_KEY           = 'proxy_url'
 $TOKEN_KEY           = 'token'
-
-# variables
-$bot = nil
 
 $STATIC_RESPONSE = {
     '/start'  => '吾輩は猫である. 名前はまだ無い. ',
@@ -23,6 +25,8 @@ $STATIC_RESPONSE = {
     '/help'  => '',
     :none    => '这我也不太清楚, 因为我只是一只猫...'
 }
+
+$user_mode = Hash.new
 
 def generate_msg(str)
     puts "[#{Time.now.to_s}] #{str}"
@@ -55,8 +59,12 @@ def fetch_configuration
     { proxy_url:proxy_url_value, token:token_value }
 end
 
-# todo: bot feature functions
-# ...
+def build_nyaa_string(count)
+    result = ''
+    count.times { |index| result << '喵' }
+    result << '?'
+    result
+end
 
 # main processing
 def main_botloop
@@ -78,11 +86,34 @@ end
 
 main_botloop do |message, bot|
     generate_msg("Receive message from #{message.chat.id}")
-    case message.text
-    when '/start', '/nyaa', '/help'
-        bot.api.send_message chat_id: message.chat.id, text:$STATIC_RESPONSE[message.text]
+
+    if !user_mode.has_key? messsage.chat.id
+        generate_msg("Create user info for #{message.chat.id}")
+        user_mode.merge! { message.chat.id =>  {
+                mode:     UserMode::STANDARD,
+                counting: 0
+            }
+        }
+    end
+
+    if user_mode[message.chat.id][:mode] == UserMode::COUNTING
+        if message.text == '喵'
+            user_mode[message.chat.id][:mode] == UserMode::STANDARD
+        else
+            count = user_mode[message.chat.id][:counting]
+            bot.api.send_message chat_id: message.chat.id, text: build_nyaa_string(count)
+            count = count + 1
+            user_mode[message.chat.id][:counting] = count
+        end
     else
-        bot.api.send_message chat_id: message.chat.id, text:$STATIC_RESPONSE[:none]
+        case message.text
+        when '/start', '/nyaa', '/help', '/sqeeze'
+            bot.api.send_message chat_id: message.chat.id, text: $STATIC_RESPONSE[message.text]
+        when '/count'
+            user_mode[message.chat.id][:mode] == UserMode::COUNTING
+        else
+            bot.api.send_message chat_id: message.chat.id, text: $STATIC_RESPONSE[:none]
+        end
     end
 end
 
