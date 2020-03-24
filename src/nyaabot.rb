@@ -49,17 +49,17 @@ def main_botloop
     if config[:proxy_url] != nil
         Telegram::Bot::Client.run(config[:token], url:config[:proxy_url]) do |bot|
             puts 'Listen to messages...'
-            bot.listen { |message| yield message }
+            bot.listen { |message| yield message, bot }
         end
     else
         Telegram::Bot::Client.run(config[:token]) do |bot|
             puts 'Listen to messages...'
-            bot.listen { |message| yield message }
+            bot.listen { |message| yield message, bot }
         end
     end
 end
 
-main_botloop do |message|
+main_botloop do |message, bot|
     case message.text
     when '/nyaa'
         bot.api.send_message chat_id: message.chat.id, test:'Nyaa~~~~'
