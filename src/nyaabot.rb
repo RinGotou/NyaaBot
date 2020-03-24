@@ -18,12 +18,13 @@ $PROXY_KEY           = 'proxy_url'
 $TOKEN_KEY           = 'token'
 
 $STATIC_RESPONSE = {
-    '/start'  => '吾輩は猫である. 名前はまだ無い. ',
-    '/nyaa'   => '喵',
-    '/sqeeze' => '(类似于打雷的呼噜声)',
+    '/start'         => '吾輩は猫である. 名前はまだ無い. ',
+    '/nyaa'          => '喵',
+    '/sqeeze'        => '(类似于打雷的呼噜声)',
     # reserved for further completion
-    '/help'  => '',
-    :none    => '这我也不太清楚, 因为我只是一只猫...'
+    '/help'          => '暂时不太清楚喵',
+    :none            => '这我也不太清楚, 因为我只是一只猫...',
+    :end_of_counting => '(盯......)'
 }
 
 $user_mode = Hash.new
@@ -89,16 +90,18 @@ main_botloop do |message, bot|
 
     if !user_mode.has_key? messsage.chat.id
         generate_msg("Create user info for #{message.chat.id}")
-        user_mode.merge! { message.chat.id =>  {
+        appendable_hash = { message.chat.id => {
                 mode:     UserMode::STANDARD,
                 counting: 0
             }
         }
+        user_mode.merge! appendable_hash
     end
 
     if user_mode[message.chat.id][:mode] == UserMode::COUNTING
         if message.text == '喵'
             user_mode[message.chat.id][:mode] == UserMode::STANDARD
+            bot.api.send_message chat_id: message.chat.id, text: $STATIC_RESPONSE[:end_of_counting]
         else
             count = user_mode[message.chat.id][:counting]
             bot.api.send_message chat_id: message.chat.id, text: build_nyaa_string(count)
