@@ -27,7 +27,7 @@ $STATIC_RESPONSE = {
     :end_of_counting => '(盯......)'
 }
 
-$user_mode = Hash.new
+$user_mode = {}
 
 def generate_msg(str)
     puts "[#{Time.now.to_s}] #{str}"
@@ -88,32 +88,34 @@ end
 main_botloop do |message, bot|
     generate_msg("Receive message from #{message.chat.id}")
 
-    if !user_mode.has_key? messsage.chat.id
+    if !$user_mode.has_key? message.chat.id
         generate_msg("Create user info for #{message.chat.id}")
         appendable_hash = { message.chat.id => {
                 mode:     UserMode::STANDARD,
-                counting: 0
+                count:    0
             }
         }
-        user_mode.merge! appendable_hash
+        $user_mode.merge! appendable_hash
     end
 
-    if user_mode[message.chat.id][:mode] == UserMode::COUNTING
+    if $user_mode[message.chat.id][:mode] == UserMode::COUNTING
+        generate_msg("Count of #{message.chat.id}: #{user_mode[message.chat.id][:count]}")
         if message.text == '喵'
-            user_mode[message.chat.id][:mode] == UserMode::STANDARD
+            $user_mode[message.chat.id][:mode] = UserMode::STANDARD
+            $user_mode[message.chat.id][:count] = 0
             bot.api.send_message chat_id: message.chat.id, text: $STATIC_RESPONSE[:end_of_counting]
         else
-            count = user_mode[message.chat.id][:counting]
+            count = $user_mode[message.chat.id][:count]
             bot.api.send_message chat_id: message.chat.id, text: build_nyaa_string(count)
             count = count + 1
-            user_mode[message.chat.id][:counting] = count
+            $user_mode[message.chat.id][:count] = count
         end
     else
         case message.text
         when '/start', '/nyaa', '/help', '/sqeeze'
             bot.api.send_message chat_id: message.chat.id, text: $STATIC_RESPONSE[message.text]
         when '/count'
-            user_mode[message.chat.id][:mode] == UserMode::COUNTING
+            $user_mode[message.chat.id][:mode] = UserMode::COUNTING
         else
             bot.api.send_message chat_id: message.chat.id, text: $STATIC_RESPONSE[:none]
         end
