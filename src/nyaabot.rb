@@ -1,10 +1,8 @@
 # -*- coding: UTF-8 -*-
-
 require 'telegram/bot'
 require 'toml-rb'
-require 'nokogiri'
-require 'net/http'
-# require 'accuweather'
+
+require 'utility/trending.rb'
 
 module UserMode
     STANDARD = 0
@@ -16,13 +14,23 @@ $DEFAULT_CONFIG_FILE = './nyaabot_config.toml'
 $USER_INFO_FILE      = './nyaabot_users.toml'
 $PROXY_KEY           = 'proxy_url'
 $TOKEN_KEY           = 'token'
+$HELP_MSG            = <<-HELP_MSG
+/nyaa:    喵x1
+/sqeeze:  撸猫
+/manzoku: 给猫摆放一条一本满足棒
+/count:   让猫进入复读机模式(不断叠加'喵')
+
+以下是尚未实现的指令:
+/trending_cxx:  获取当前Github Trending(C++)
+/trending_ruby: 获取当前Github Trending(Ruby)
+HELP_MSG
 
 $STATIC_RESPONSE = {
     '/start'         => '吾輩は猫である. 名前はまだ無い. ',
     '/nyaa'          => '喵',
     '/sqeeze'        => '(类似于打雷的呼噜声)',
-    # reserved for further completion
-    '/help'          => '暂时不太清楚喵',
+    '/help'          => $HELP_MSG,
+    '/manzoku'       => 'https://www.nicovideo.jp/watch/sm13180865',
     :none            => '这我也不太清楚, 因为我只是一只猫...',
     :end_of_counting => '(盯......)'
 }
@@ -112,7 +120,7 @@ main_botloop do |message, bot|
         end
     else
         case message.text
-        when '/start', '/nyaa', '/help', '/sqeeze'
+        when '/start', '/nyaa', '/help', '/sqeeze', '/manzoku'
             bot.api.send_message chat_id: message.chat.id, text: $STATIC_RESPONSE[message.text]
         when '/count'
             $user_mode[message.chat.id][:mode] = UserMode::COUNTING
