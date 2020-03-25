@@ -2,7 +2,8 @@
 require 'telegram/bot'
 require 'toml-rb'
 
-require 'utility/trending.rb'
+# Fix: chdir()
+# require './utility/trending.rb'
 
 module UserMode
     STANDARD = 0
