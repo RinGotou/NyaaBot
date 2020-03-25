@@ -5,6 +5,8 @@ require 'json'
 require 'nokogiri'
 require 'open-uri'
 
+require __dir__ << '/utility/trending'
+
 module UserMode
     STANDARD = 0
     COUNTING = 1
@@ -134,7 +136,7 @@ main_botloop do |message, bot|
                 bot.api.send_message chat_id: message.chat.id, text: $STATIC_RESPONSE[:end_of_counting]
             else
                 count = $user_mode[message.chat.id][:count]
-                bot.api.send_message chat_id: message.chat.id, text: build_nyaa_string(count)
+                bot.api.send_message chat_id: message.chat.id, text: build_nyaa_string(count), reply_to_message_id: message.message_id
                 count = count + 1
                 $user_mode[message.chat.id][:count] = count
             end
@@ -160,10 +162,8 @@ main_botloop do |message, bot|
                     # do nothing
                 end
             else
-                bot.api.send_message chat_id: message.chat.id, text: $STATIC_RESPONSE[:none]
+                bot.api.send_message chat_id: message.chat.id, text: $STATIC_RESPONSE[:none] if message.chat.type != 'group'
             end
         end
     end
 end
-
-main_botloop()
