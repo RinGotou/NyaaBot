@@ -1,9 +1,9 @@
 # -*- coding: UTF-8 -*-
 require 'telegram/bot'
 require 'toml-rb'
-
-# Fix: chdir()
-# require './utility/trending.rb'
+require 'json'
+require 'nokogiri'
+require 'open-uri'
 
 module UserMode
     STANDARD = 0
@@ -11,6 +11,7 @@ module UserMode
 end
 
 # constants
+$NICO_URL_HEAD       = 'https://www.nicovideo.jp/watch/'
 $DEFAULT_CONFIG_FILE = './nyaabot_config.toml'
 $USER_INFO_FILE      = './nyaabot_users.toml'
 $PROXY_KEY           = 'proxy_url'
@@ -26,12 +27,17 @@ $HELP_MSG            = <<-HELP_MSG
 /trending_ruby: 获取当前Github Trending(Ruby)
 HELP_MSG
 
+$NICO_VEDIO_ID = [
+    'sm17587092', 'sm13180865',
+    'sm13404601', 'sm35050915',
+    'sm13355378'
+]
+
 $STATIC_RESPONSE = {
     '/start'         => '吾輩は猫である. 名前はまだ無い. ',
     '/nyaa'          => '喵',
     '/sqeeze'        => '(类似于打雷的呼噜声)',
     '/help'          => $HELP_MSG,
-    '/manzoku'       => 'https://www.nicovideo.jp/watch/sm13180865',
     :none            => '这我也不太清楚, 因为我只是一只猫...',
     :end_of_counting => '(盯......)'
 }
@@ -121,8 +127,11 @@ main_botloop do |message, bot|
         end
     else
         case message.text
-        when '/start', '/nyaa', '/help', '/sqeeze', '/manzoku'
+        when '/start', '/nyaa', '/help', '/sqeeze'
             bot.api.send_message chat_id: message.chat.id, text: $STATIC_RESPONSE[message.text]
+        when '/manzoku'
+            url = $NICO_URL_HEAD + $NICO_VEDIO_ID[rand($NICO_VEDIO_ID.size)]
+            bot.api.send_message chat_id: message.chat.id, text: url
         when '/count'
             $user_mode[message.chat.id][:mode] = UserMode::COUNTING
         else
