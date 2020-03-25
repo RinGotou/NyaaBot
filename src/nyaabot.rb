@@ -5,7 +5,7 @@ require 'json'
 require 'nokogiri'
 require 'open-uri'
 
-require __dir__ << '/utility/trending'
+# require __dir__ << '/utility/trending'
 
 module UserMode
     STANDARD = 0
