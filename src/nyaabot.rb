@@ -61,6 +61,7 @@ def fetch_configuration
 
     begin
         config_file = TomlRB.parse(File.open($DEFAULT_CONFIG_FILE))
+		    $blocked_user_list = TomlRB::parse(File.open($BLOCKED_USERS))
         token_value = config_file[$TOKEN_KEY]
         if config_file.has_key? $PROXY_KEY
             proxy_url_value = config_file[$PROXY_KEY]
@@ -87,7 +88,6 @@ end
 # main processing
 def main_botloop
     config = fetch_configuration
-    $blocked_user_list = TomlRB::parse($BLOCKED_USERS)
 
     if config == nil; return; end
     if config[:proxy_url] != nil
