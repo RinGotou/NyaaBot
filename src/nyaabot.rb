@@ -93,12 +93,22 @@ def main_botloop
     if config[:proxy_url] != nil
         Telegram::Bot::Client.run(config[:token], url:config[:proxy_url]) do |bot|
             generate_msg('Listen to messages...')
-            bot.listen { |message| yield message, bot }
+            bot.listen { |message| 
+                begin
+                    yield message, bot 
+                rescue Telegram::Bot::Exceptions::ResponseError => exception
+                end
+            }
         end
     else
         Telegram::Bot::Client.run(config[:token]) do |bot|
             generate_msg('Listen to messages...')
-            bot.listen { |message| yield message, bot }
+            bot.listen { |message| 
+                begin
+                    yield message, bot 
+                rescue Telegram::Bot::Exceptions::ResponseError => exception
+                end
+            }
         end
     end
 end
