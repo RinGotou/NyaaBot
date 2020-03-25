@@ -30,7 +30,8 @@ HELP_MSG
 $NICO_VEDIO_ID = [
     'sm17587092', 'sm13180865',
     'sm13404601', 'sm35050915',
-    'sm13355378'
+    'sm13355378', 'sm30751859',
+    'sm12606793'
 ]
 
 $STATIC_RESPONSE = {
@@ -127,7 +128,6 @@ main_botloop do |message, bot|
     Thread.new do
         if $user_mode[message.chat.id][:mode] == UserMode::COUNTING
             $msg_lock.lock
-            generate_msg("Count of #{message.chat.id}: #{$user_mode[message.chat.id][:count]}")
             if message.text == '喵'
                 $user_mode[message.chat.id][:mode] = UserMode::STANDARD
                 $user_mode[message.chat.id][:count] = 0
@@ -138,20 +138,24 @@ main_botloop do |message, bot|
                 count = count + 1
                 $user_mode[message.chat.id][:count] = count
             end
+
+            begin
+                $msg_lock.unlock
+            rescue => exception
+                # do nothing
+            end
         else
             case message.text
             when '/start', '/nyaa', '/help', '/sqeeze'
-                $msg_lock.lock
                 bot.api.send_message chat_id: message.chat.id, text: $STATIC_RESPONSE[message.text]
             when '/manzoku'
                 url = $NICO_URL_HEAD + $NICO_VEDIO_ID[rand($NICO_VEDIO_ID.size)]
-                $msg_lock.lock
                 bot.api.send_message chat_id: message.chat.id, text: url
             when '/count'
                 $msg_lock.lock
                 $user_mode[message.chat.id][:mode] = UserMode::COUNTING
+                $msg_lock.unlock
             else
-                $msg_lock.lock
                 bot.api.send_message chat_id: message.chat.id, text: $STATIC_RESPONSE[:none]
             end
         end
