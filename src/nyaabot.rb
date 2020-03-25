@@ -95,6 +95,10 @@ def main_botloop
             generate_msg('Listen to messages...')
             bot.listen { |message| 
                 begin
+                    if $BLOCKED_USERS[message.chat.id.to_s]
+                        generate_msg("User #{message.chat.first_name} is blocked")
+                        next
+                    end
                     yield message, bot 
                 rescue Telegram::Bot::Exceptions::ResponseError => exception
                 end
@@ -105,6 +109,10 @@ def main_botloop
             generate_msg('Listen to messages...')
             bot.listen { |message| 
                 begin
+                    if $BLOCKED_USERS[message.chat.id.to_s]
+                        generate_msg("User #{message.chat.first_name} is blocked")
+                        next
+                    end
                     yield message, bot 
                 rescue Telegram::Bot::Exceptions::ResponseError => exception
                 end
@@ -114,12 +122,7 @@ def main_botloop
 end
 
 main_botloop do |message, bot|
-    generate_msg("Receive message from #{message.chat.id}")
-
-    if $BLOCKED_USERS[message.chat.id.to_s]
-        generate_msg("User #{message.chat.first_name} is blocked")
-        next
-    end
+    generate_msg("Receive message from #{message.chat.id} aka #{message.chat.first_name}")
 
     if !$user_mode.has_key? message.chat.id
         generate_msg("Create user info for #{message.chat.id}")
