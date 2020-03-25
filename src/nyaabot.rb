@@ -14,7 +14,6 @@ end
 $NICO_URL_HEAD       = 'https://www.nicovideo.jp/watch/'
 $DEFAULT_CONFIG_FILE = './nyaabot_config.toml'
 $USER_INFO_FILE      = './nyaabot_users.toml'
-$BLOCKED_USERS       = './blocked_users.toml'
 $PROXY_KEY           = 'proxy_url'
 $TOKEN_KEY           = 'token'
 $HELP_MSG            = <<-HELP_MSG
@@ -44,7 +43,7 @@ $STATIC_RESPONSE = {
 }
 
 $user_mode = {}
-$blocked_user_list = nil
+$msg_lock = Mutex.new
 
 def generate_msg(str)
     puts "[#{Time.now.to_s}] #{str}"
@@ -61,7 +60,6 @@ def fetch_configuration
 
     begin
         config_file = TomlRB.parse(File.open($DEFAULT_CONFIG_FILE))
-		    $blocked_user_list = TomlRB::parse(File.open($BLOCKED_USERS))
         token_value = config_file[$TOKEN_KEY]
         if config_file.has_key? $PROXY_KEY
             proxy_url_value = config_file[$PROXY_KEY]
@@ -95,10 +93,6 @@ def main_botloop
             generate_msg('Listen to messages...')
             bot.listen { |message| 
                 begin
-                    if $BLOCKED_USERS[message.chat.id.to_s]
-                        generate_msg("User #{message.chat.first_name} is blocked")
-                        next
-                    end
                     yield message, bot 
                 rescue Telegram::Bot::Exceptions::ResponseError => exception
                 end
@@ -109,10 +103,6 @@ def main_botloop
             generate_msg('Listen to messages...')
             bot.listen { |message| 
                 begin
-                    if $BLOCKED_USERS[message.chat.id.to_s]
-                        generate_msg("User #{message.chat.first_name} is blocked")
-                        next
-                    end
                     yield message, bot 
                 rescue Telegram::Bot::Exceptions::ResponseError => exception
                 end
@@ -134,29 +124,36 @@ main_botloop do |message, bot|
         $user_mode.merge! appendable_hash
     end
 
-    if $user_mode[message.chat.id][:mode] == UserMode::COUNTING
-        generate_msg("Count of #{message.chat.id}: #{$user_mode[message.chat.id][:count]}")
-        if message.text == '喵'
-            $user_mode[message.chat.id][:mode] = UserMode::STANDARD
-            $user_mode[message.chat.id][:count] = 0
-            bot.api.send_message chat_id: message.chat.id, text: $STATIC_RESPONSE[:end_of_counting]
+    Thread.new do
+        if $user_mode[message.chat.id][:mode] == UserMode::COUNTING
+            $msg_lock.lock
+            generate_msg("Count of #{message.chat.id}: #{$user_mode[message.chat.id][:count]}")
+            if message.text == '喵'
+                $user_mode[message.chat.id][:mode] = UserMode::STANDARD
+                $user_mode[message.chat.id][:count] = 0
+                bot.api.send_message chat_id: message.chat.id, text: $STATIC_RESPONSE[:end_of_counting]
+            else
+                count = $user_mode[message.chat.id][:count]
+                bot.api.send_message chat_id: message.chat.id, text: build_nyaa_string(count)
+                count = count + 1
+                $user_mode[message.chat.id][:count] = count
+            end
         else
-            count = $user_mode[message.chat.id][:count]
-            bot.api.send_message chat_id: message.chat.id, text: build_nyaa_string(count)
-            count = count + 1
-            $user_mode[message.chat.id][:count] = count
-        end
-    else
-        case message.text
-        when '/start', '/nyaa', '/help', '/sqeeze'
-            bot.api.send_message chat_id: message.chat.id, text: $STATIC_RESPONSE[message.text]
-        when '/manzoku'
-            url = $NICO_URL_HEAD + $NICO_VEDIO_ID[rand($NICO_VEDIO_ID.size)]
-            bot.api.send_message chat_id: message.chat.id, text: url
-        when '/count'
-            $user_mode[message.chat.id][:mode] = UserMode::COUNTING
-        else
-            bot.api.send_message chat_id: message.chat.id, text: $STATIC_RESPONSE[:none]
+            case message.text
+            when '/start', '/nyaa', '/help', '/sqeeze'
+                $msg_lock.lock
+                bot.api.send_message chat_id: message.chat.id, text: $STATIC_RESPONSE[message.text]
+            when '/manzoku'
+                url = $NICO_URL_HEAD + $NICO_VEDIO_ID[rand($NICO_VEDIO_ID.size)]
+                $msg_lock.lock
+                bot.api.send_message chat_id: message.chat.id, text: url
+            when '/count'
+                $msg_lock.lock
+                $user_mode[message.chat.id][:mode] = UserMode::COUNTING
+            else
+                $msg_lock.lock
+                bot.api.send_message chat_id: message.chat.id, text: $STATIC_RESPONSE[:none]
+            end
         end
     end
 end
