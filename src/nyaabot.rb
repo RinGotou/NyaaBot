@@ -154,7 +154,11 @@ main_botloop do |message, bot|
             when '/count'
                 $msg_lock.lock
                 $user_mode[message.chat.id][:mode] = UserMode::COUNTING
-                $msg_lock.unlock
+                begin
+                    $msg_lock.unlock
+                rescue => exception
+                    # do nothing
+                end
             else
                 bot.api.send_message chat_id: message.chat.id, text: $STATIC_RESPONSE[:none]
             end
