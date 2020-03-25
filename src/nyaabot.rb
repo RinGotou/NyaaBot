@@ -14,6 +14,7 @@ end
 $NICO_URL_HEAD       = 'https://www.nicovideo.jp/watch/'
 $DEFAULT_CONFIG_FILE = './nyaabot_config.toml'
 $USER_INFO_FILE      = './nyaabot_users.toml'
+$BLOCKED_USERS       = './blocked_users.toml'
 $PROXY_KEY           = 'proxy_url'
 $TOKEN_KEY           = 'token'
 $HELP_MSG            = <<-HELP_MSG
@@ -43,6 +44,7 @@ $STATIC_RESPONSE = {
 }
 
 $user_mode = {}
+$blocked_user_list = nil
 
 def generate_msg(str)
     puts "[#{Time.now.to_s}] #{str}"
@@ -85,6 +87,7 @@ end
 # main processing
 def main_botloop
     config = fetch_configuration
+    $blocked_user_list = TomlRB::parse($BLOCKED_USERS)
 
     if config == nil; return; end
     if config[:proxy_url] != nil
@@ -102,6 +105,11 @@ end
 
 main_botloop do |message, bot|
     generate_msg("Receive message from #{message.chat.id}")
+
+    if $BLOCKED_USERS[message.chat.id.to_s]
+        generate_msg("User #{message.chat.first_name} is blocked")
+        next
+    end
 
     if !$user_mode.has_key? message.chat.id
         generate_msg("Create user info for #{message.chat.id}")
